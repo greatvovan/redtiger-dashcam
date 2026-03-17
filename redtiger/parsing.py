@@ -69,7 +69,7 @@ def parse_packet(mm, pos):
         return None
 
 
-def extract_gps_from_mp4(filename):
+def extract_telemetry_from_mp4(filename):
     results = []
 
     with open(filename, 'rb') as f:
