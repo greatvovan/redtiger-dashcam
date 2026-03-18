@@ -54,15 +54,23 @@ def parse_packet(mm, pos):
 
         timestamp = datetime(ps.year, ps.month, ps.day,
                              ps.hour, ps.minute, ps.second)
-        
+        utc_timestamp = datetime(2000 + ps.utc_year, ps.utc_month, ps.utc_day,
+                                 ps.utc_hour, ps.utc_minute, ps.utc_second)
+
         return Packet(
             offset=pos,
             timestamp=timestamp,
+            utc_timestamp=utc_timestamp,
             latitude=lat,
             longitude=lon,
             speed=ps.speed,
             bearing=ps.bearing,
-            acceleration=(ps.gx, ps.gy, ps.gz)
+            gx=ps.gx,
+            gy=ps.gy,
+            gz=ps.gz,
+            unknown_0=ps.unknown_0,
+            unknown_1=ps.unknown_1,
+            unknown_2=ps.unknown_2,
         )
 
     except Exception:
