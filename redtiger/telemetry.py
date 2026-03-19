@@ -53,7 +53,7 @@ class Packet:
     utc_timestamp: datetime
     latitude: float
     longitude: float
-    speed: float
+    speed_kmh: float
     bearing: float
     gx: int
     gy: int

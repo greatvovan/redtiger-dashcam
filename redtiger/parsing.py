@@ -3,6 +3,12 @@ import struct
 from datetime import datetime
 from redtiger.telemetry import Packet, PacketStruct
 
+try:
+    from tqdm import tqdm
+    _TQDM = True
+except ImportError:
+    _TQDM = False
+
 
 def ddmm_to_decimal(x):
     deg = round(x / 100)
@@ -39,6 +45,8 @@ def parse_mp4_boxes(mm):
 
 def parse_packet(mm, pos):
     """Parse telemetry packet at given offset."""
+    NAUT_MILE_KM = 1.852
+    CENTURY = 2000
     try:
         mv = memoryview(mm)[pos:pos+160]
         ps = PacketStruct(mv)
@@ -54,7 +62,7 @@ def parse_packet(mm, pos):
 
         timestamp = datetime(ps.year, ps.month, ps.day,
                              ps.hour, ps.minute, ps.second)
-        utc_timestamp = datetime(2000 + ps.utc_year, ps.utc_month, ps.utc_day,
+        utc_timestamp = datetime(CENTURY + ps.utc_year, ps.utc_month, ps.utc_day,
                                  ps.utc_hour, ps.utc_minute, ps.utc_second)
 
         return Packet(
@@ -63,7 +71,7 @@ def parse_packet(mm, pos):
             utc_timestamp=utc_timestamp,
             latitude=lat,
             longitude=lon,
-            speed=ps.speed,
+            speed_kmh=ps.speed * NAUT_MILE_KM,
             bearing=ps.bearing,
             gx=ps.gx,
             gy=ps.gy,
@@ -96,6 +104,9 @@ def extract_telemetry_from_mp4(filename):
         # 2. scan inside mdat only
         marker = b'freeGPS'
 
+        if _TQDM:
+            pbar = tqdm(desc='Bytes processed', total=size, leave=False)
+
         for start, size in mdat_ranges:
             end = start + size
             pos = start
@@ -104,6 +115,10 @@ def extract_telemetry_from_mp4(filename):
                 pos = mm.find(marker, pos, end)
                 if pos == -1:
                     break
+
+                if _TQDM:
+                    pbar.n = pos
+                    pbar.refresh()
 
                 rec = parse_packet(mm, pos)
                 if rec:
