@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 def split_trips(dir) -> list[list[Path]]:
