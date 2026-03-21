@@ -37,6 +37,9 @@ def split_trips(dir) -> list[list[Path]]:
     while i < total:
         current_item = files[i]
         current_ts = timestamp_from_filename(current_item.name)
+        if current_ts == previous_ts:
+            i += 1
+            continue
         if not is_in_trip_delta(previous_ts, current_ts):
             # Start new group
             current_group = []
@@ -44,7 +47,7 @@ def split_trips(dir) -> list[list[Path]]:
         current_group.append(current_item)
         previous_ts = current_ts
         i += 1
-    
+
     return groups
 
 def timestamp_from_filename(filename: str) -> datetime:
