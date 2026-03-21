@@ -106,7 +106,7 @@ def extract_telemetry_from_mp4(filename):
         marker = b'freeGPS'
 
         if _TQDM:
-            pbar = tqdm(desc='Bytes processed', total=size, leave=False)
+            pbar = tqdm(desc='Bytes processed', total=size, unit='B', leave=False)
 
         for start, size in mdat_ranges:
             end = start + size
