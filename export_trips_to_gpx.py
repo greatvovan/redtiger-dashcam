@@ -23,11 +23,11 @@ def main():
     if not gpx_path.exists():
         print('Path not found:', gpx_path)
 
-    export_tracks(videos_path, gpx_path)
+    process_path(videos_path, gpx_path)
 
-def export_tracks(video_path: Path, gpx_path: Path):
+def process_path(video_path: Path, gpx_path: Path):
     if video_path.is_file():
-        trips = [[video_path]]
+        trips = [[video_path]]  # In case of a file, produce a trivial, single-video trip.
     else:
         trips = split_trips(video_path)
         print(f'{sum(len(trip) for trip in trips)} videos were combined into {len(trips)} trips')
@@ -35,9 +35,9 @@ def export_tracks(video_path: Path, gpx_path: Path):
     pbar = tqdm(trips)
     for trip in pbar:
         pbar.set_description(f'Processing trip {get_trip_name(trip)}')
-        export_track_data(trip, gpx_path)
+        process_trip(trip, gpx_path)
 
-def export_track_data(trip: list[Path], gpx_path: Path):
+def process_trip(trip: list[Path], gpx_path: Path):
     trip_data = []
     pbar = tqdm(trip, leave=False)
     for item in pbar:
