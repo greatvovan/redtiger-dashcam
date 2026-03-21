@@ -28,7 +28,7 @@ class PacketStruct(Struct):
     utc_year =   '<I', 0x38
     utc_month =  '<I', 0x3c
     utc_day =    '<I', 0x40
-    flags =      '3s', 0x44
+    flags =      '3s', 0x44     # [Sat status][Lat direction][Lon direction]
     # 0x00             0x47
     unknown_1 =  '<d', 0x4c
     unknown_2 =  '<d', 0x54
@@ -55,6 +55,7 @@ class Packet:
     longitude: float
     speed_kmh: float
     bearing: float
+    nmea_status: str
     gx: int
     gy: int
     gz: int

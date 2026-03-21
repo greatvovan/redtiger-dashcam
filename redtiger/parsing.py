@@ -1,6 +1,6 @@
 import mmap
 import struct
-from datetime import datetime
+from datetime import datetime, UTC
 from redtiger.telemetry import Packet, PacketStruct
 
 try:
@@ -63,7 +63,7 @@ def parse_packet(mm, pos):
         timestamp = datetime(ps.year, ps.month, ps.day,
                              ps.hour, ps.minute, ps.second)
         utc_timestamp = datetime(CENTURY + ps.utc_year, ps.utc_month, ps.utc_day,
-                                 ps.utc_hour, ps.utc_minute, ps.utc_second)
+                                 ps.utc_hour, ps.utc_minute, ps.utc_second, tzinfo=UTC)
 
         return Packet(
             offset=pos,
@@ -73,6 +73,7 @@ def parse_packet(mm, pos):
             longitude=lon,
             speed_kmh=ps.speed * NAUT_MILE_KM,
             bearing=ps.bearing,
+            nmea_status=ps.flags[0:1].decode(),
             gx=ps.gx,
             gy=ps.gy,
             gz=ps.gz,
