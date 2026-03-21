@@ -1,0 +1,2 @@
+tqdm
+git+https://github.com/sgraaf/gpx.git
