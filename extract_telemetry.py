@@ -18,7 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('format', type=str, help='GPX or CSV')
     return parser
 
-def process_path(video_path: Path, save_path: Path, format: str):
+def process_path(video_path: Path, save_path: Path, format: str) -> None:
     if video_path.is_file():
         trips = [[video_path]]  # In case of a file, produce a trivial, single-video trip.
     else:
@@ -30,7 +30,7 @@ def process_path(video_path: Path, save_path: Path, format: str):
         pbar.set_description(f'Processing trip {get_trip_name(trip)}')
         process_trip(trip, save_path, format)
 
-def process_trip(trip: list[Path], save_path: Path, format: str):
+def process_trip(trip: list[Path], save_path: Path, format: str) -> None:
     trip_data = []
     pbar = tqdm(trip, leave=False)
     for item in pbar:
@@ -44,7 +44,7 @@ def process_trip(trip: list[Path], save_path: Path, format: str):
         track_path = save_path / (trip[0].stem + '.csv')
         save_to_csv(trip_data, track_path)
 
-def save_to_gpx_track(telemetry: list[Packet], trip_name, save_path: Path):
+def save_to_gpx_track(telemetry: list[Packet], trip_name, save_path: Path) -> None:
     import xml.etree.ElementTree as ET
     from datetime import datetime, UTC
     from gpx import GPX, Metadata, Track, TrackSegment, Waypoint, Extensions
@@ -95,9 +95,12 @@ def save_to_gpx_track(telemetry: list[Packet], trip_name, save_path: Path):
     with open(save_path, 'wt') as file:
         file.write(gpx.to_string())
 
-def save_to_csv(data, path):
+def save_to_csv(data: list[Packet], path: Path) -> None:
     import csv
     from dataclasses import asdict
+
+    if len(data) == 0:
+        return
 
     with open(path, 'w', newline='') as file:
         writer = csv.DictWriter(file, fieldnames=asdict(data[0]).keys())
