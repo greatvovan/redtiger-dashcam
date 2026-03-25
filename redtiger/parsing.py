@@ -43,22 +43,34 @@ def parse_mp4_boxes(mm):
         pos += box_size
 
 
-def parse_packet(mm, pos):
+def parse_gps_packet(mm, pos):
     """Parse telemetry packet at given offset."""
-    NAUT_MILE_KM = 1.852
-    CENTURY = 2000
     try:
-        mv = memoryview(mm)[pos:pos+160]
+        # Structure: [GPS ][len32][packet]
+        plen = struct.unpack_from('<I', mm, pos+4)[0]
+        ppos = pos + 4 + 4
+
+        if plen != PacketStruct.length():
+            raise ValueError('Unsupported packet size')
+
+        mv = memoryview(mm)[ppos:ppos+plen]
         ps = PacketStruct(mv)
 
-        ns = ps.flags[1:2]
-        ew = ps.flags[2:3]
+        # Check magic markers
+        if ps.m_yg != b'YOUQINGGPS' or ps.m_123 != b'1234567890123456YSKJ':
+            raise ValueError('Unexpected packet structure')
+
+        ns = ps.flags[1:2].decode()
+        ew = ps.flags[2:3].decode()
         lat = ddmm_to_decimal(ps.lat_raw)
         lon = ddmm_to_decimal(ps.lon_raw)
-        if ns == b'S':
+        if ns == 'S':
             lat = -lat
-        if ew == b'W':
+        if ew == 'W':
             lon = -lon
+
+        NAUT_MILE_KM = 1.852
+        CENTURY = 2000
 
         timestamp = datetime(ps.year, ps.month, ps.day,
                              ps.hour, ps.minute, ps.second)
@@ -66,7 +78,6 @@ def parse_packet(mm, pos):
                                  ps.utc_hour, ps.utc_minute, ps.utc_second, tzinfo=UTC)
 
         return Packet(
-            offset=pos,
             timestamp=timestamp,
             utc_timestamp=utc_timestamp,
             latitude=lat,
@@ -77,9 +88,7 @@ def parse_packet(mm, pos):
             gx=ps.gx,
             gy=ps.gy,
             gz=ps.gz,
-            unknown_0=ps.unknown_0,
-            unknown_1=ps.unknown_1,
-            unknown_2=ps.unknown_2,
+            unknown=ps.unknown.hex(),
         )
 
     except Exception:
@@ -92,7 +101,7 @@ def extract_telemetry_from_mp4(filename):
     with open(filename, 'rb') as f:
         mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
 
-        # 1. find mdat box
+        # 1. Find mdat box
         mdat_ranges = []
         for box_type, pos, size in parse_mp4_boxes(mm):
             if box_type == b'mdat':
@@ -102,8 +111,13 @@ def extract_telemetry_from_mp4(filename):
         if not mdat_ranges:
             mdat_ranges = [(0, len(mm))]
 
-        # 2. scan inside mdat only
-        marker = b'freeGPS'
+        # 2. Scan inside mdat only
+        # This is not a proper parsing algorithm.
+        # The binary data suggests that 'free' block is organized in a similar
+        # fashion as MP4 'free' box, but it is not it (in fact, we skip proper
+        # 'free' boxes above). Below 'free' is a 16kB block beginning with 'GPS '
+        # marker, hence we a searching for:
+        marker = b'freeGPS '
 
         if _TQDM:
             pbar = tqdm(desc='Bytes processed', total=size, unit='B', leave=False)
@@ -121,7 +135,7 @@ def extract_telemetry_from_mp4(filename):
                     pbar.n = pos
                     pbar.refresh()
 
-                rec = parse_packet(mm, pos)
+                rec = parse_gps_packet(mm, pos + 4)   # account for 'free'
                 if rec:
                     results.append(rec)
 
